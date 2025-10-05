@@ -6,58 +6,77 @@ mini prototipo de uso de librerias
 """
 # ---------- Importes ----------
 import os
-import streamlit as st
+import io
+import time
+import requests
 import numpy as np
 import pandas as pd
+import streamlit as st
 import lightkurve as lk
 import matplotlib.pyplot as plt
 from scipy.signal import medfilt
-import requests, io
 
-st.markdown("<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1><p style='text-align: center'>En busca de <strong>Exoplanetas</strong> 🪐</p>", unsafe_allow_html = True)
-
+# ---------- UI base ----------
+st.set_page_config(page_title="PLUTONITA", layout="wide")
+st.markdown(
+    "<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1>"
+    "<p style='text-align: center'>En busca de <strong>Exoplanetas</strong> 🪐</p>",
+    unsafe_allow_html=True
+)
 st.title("Datasets de Objetos TESS de Interés (TOI)")
 
-left_column, right_column = st.columns(2)
+# left_column, right_column = st.columns(2)
 
-generado = False
+# ---------- Helpers ----------
+TAP = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
+OUT_DIR = "graficos_producidos"
+os.makedirs(OUT_DIR, exist_ok=True)
 
-# @st.cache_data
-def cargar_datos(nfilas):
-    LINK = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
-    q = f"SELECT top {nfilas} * FROM toi WHERE tfopwg_disp LIKE 'PC' OR tfopwg_disp LIKE 'KP' ORDER BY tid"
-    r = requests.get(LINK, params={"query": q, "format": "csv"})
-    data = pd.read_csv(
-        io.StringIO(r.text), 
-        nrows=nfilas
+@st.cache_data(show_spinner=False, ttl=1800)
+def cargar_datos(nfilas: int) -> pd.DataFrame:
+    """Carga TOP nfilas de TOI (PC/KP) ordenado por TID desde el Exoplanet Archive (CSV)."""
+    q = (
+        f"SELECT TOP {nfilas} * FROM toi "
+        f"WHERE tfopwg_disp IN ('PC','KP') "
+        f"ORDER BY tid"
     )
-    return data
+    r = requests.get(TAP, params={"query": q, "format": "csv"}, timeout=60)
+    r.raise_for_status()
+    df = pd.read_csv(io.StringIO(r.text), nrows=nfilas)
+    return df
 
-cantidad_filas = st.number_input("Cantidad de filas a cargar:", min_value=1, max_value=1000, value=10, step=1)
-data = cargar_datos(cantidad_filas)
+@st.cache_data(show_spinner=False, ttl=600)
+def consultar_toi_por_tid(tid: int) -> pd.DataFrame:
+    """Devuelve filas de TOI para un TID específico, solo PC/KP."""
+    q = (
+        "SELECT * FROM toi "
+        f"WHERE (tfopwg_disp IN ('PC','KP')) AND (tid = {tid}) "
+        "ORDER BY toi"
+    )
+    r = requests.get(TAP, params={"query": q, "format": "csv"}, timeout=60)
+    r.raise_for_status()
+    return pd.read_csv(io.StringIO(r.text))
 
-st.write(data)
-
-# ---------- CONFIGURACION ----------
-out_dir = "graficos_producidos" #donde se alojararn los graficos
-os.makedirs(out_dir, exist_ok=True)
-# ---------- funcionamiento ----------
-def descarga_tess_lk(tic_id, sector=None, autor=None):
-    """Descarga curva de luz TESS para un TID; si hay varios sectores, los une."""
-    resul = lk.search_lightcurve(f"TIC {int(tic_id)}", mission="TESS", sector=sector, author=autor)
-    if len(resul) == 0:
+def descarga_tess_lk(tic_id, sector=None, author=None):
+    """Descarga curva de luz TESS para un TIC; si hay varios sectores, los une."""
+    res = lk.search_lightcurve(f"TIC {int(tic_id)}", mission="TESS", sector=sector, author=author)
+    if len(res) == 0:
         return None
     try:
-        lcc = resul.download_all()
+        lcc = res.download_all()
         if hasattr(lcc, "stitch"):
-            return lcc.stitch()# una sola curva de luz unificada
+            return lcc.stitch()  # una sola curva de luz unificada
         return lcc[0]
     except Exception:
-        return resul[0].download()
+        try:
+            return res[0].download()
+        except Exception:
+            return None
 
-def suavizado_curva(flux, ventana_largo=401): #flux es el brillo medido de la estrella a lo largo del tiempo
+def suavizado_curva(flux, ventana_largo=401):
+    """Detrende suave por mediana deslizante (medfilt), devuelve flujo normalizado."""
     f = np.asarray(flux, dtype=np.float64, order="C")
-    if not np.isfinite(f).all(): #rellena los campos vacios que tienen Nan para que no se modifique la mediana
+    if not np.isfinite(f).all():
         med = np.nanmedian(f)
         f = np.where(np.isfinite(f), f, med)
     wl = int(ventana_largo)
@@ -70,100 +89,151 @@ def suavizado_curva(flux, ventana_largo=401): #flux es el brillo medido de la es
     base[base == 0] = np.nanmedian(base[base != 0])
     return f / base
 
-
 def grafico_curva_luz(t, f, exoplaneta, direccion_salida):
     f_det = suavizado_curva(f, 401)
-    plt.figure(); plt.plot(t, f_det, ".", ms=1)
-    plt.xlabel("Tiempo [días]"); plt.ylabel("Flujo (suavizado)"); plt.title(f"TIC {exoplaneta.tid} — suavizado")
-    plt.tight_layout(); plt.savefig(os.path.join(direccion_salida, f"TIC{exoplaneta.tid}_suavizado.png")); plt.close()
-    # print("hecho")
+    plt.figure()
+    plt.plot(t, f_det, ".", ms=1)
+    plt.xlabel("Tiempo [días]"); plt.ylabel("Flujo (suavizado)")
+    plt.title(f"TIC {exoplaneta.tid} — suavizado")
+    plt.tight_layout()
+    path = os.path.join(direccion_salida, f"TIC{exoplaneta.tid}_suavizado.png")
+    plt.savefig(path); plt.close()
+    return path
 
-def grafico_curva_luz_plegado(t, f, exoplaneta, direccion_salida):#t (días), f_det (detrendido), periodo (días)
+def grafico_curva_luz_plegado(t, f, exoplaneta, direccion_salida):
     f_det = suavizado_curva(f, 401)
-    t0 = t[0]  # o el epoch del TOI si lo tenés
+    t0 = t[0]  # si tenés epoch del TOI, úsalo aquí
     periodo = exoplaneta['pl_orbper'] if np.isfinite(exoplaneta['pl_orbper']) else 1.0
 
-    fase = ((t - t0)/periodo) % 1.0 #formula de plegado de la curva de luz
+    fase = ((t - t0) / periodo) % 1.0
     fase = fase - 0.5
     order = np.argsort(fase)
     fase, f_fold = fase[order], f_det[order]
 
-    # binning
     bins = np.linspace(-0.5, 0.5, 61)
     idx = np.digitize(fase, bins) - 1
     xb, yb = [], []
-    for b in range(len(bins)-1):
+    for b in range(len(bins) - 1):
         m = idx == b
         if np.any(m):
-            xb.append(0.5*(bins[b]+bins[b+1]))
+            xb.append(0.5 * (bins[b] + bins[b + 1]))
             yb.append(np.nanmedian(f_fold[m]))
     xb, yb = np.array(xb), np.array(yb)
-    #armado del grafico
+
     plt.figure()
     plt.plot(fase, f_fold, ".", ms=1, alpha=0.4, label="datos")
     plt.plot(xb, yb, "-", lw=2, label="mediana por bins")
     plt.xlabel("Fase (ciclos)"); plt.ylabel("Flujo (suavizado)")
     plt.title(f"Plegado con P≈{periodo:.4f} d")
     plt.legend(); plt.tight_layout()
-    plt.savefig(os.path.join(direccion_salida, f"TIC{exoplaneta.tid}_plegado.png")); plt.close()
-    # print("hecho")
+    path = os.path.join(direccion_salida, f"TIC{exoplaneta.tid}_plegado.png")
+    plt.savefig(path); plt.close()
+    return path
 
+# ---------- Tabla inicial con indicador de carga ----------
+cantidad_filas = st.number_input(
+    "Cantidad de filas a cargar:", min_value=1, max_value=1000, value=10, step=1
+)
 
-def generamiento_parametros_exoplaneta(tid_id):
-    muestra_candidatos = data_set[data_set['tfopwg_disp'].isin(["PC", "KP"])] #filtro solo planetas candidatos sera hecho en el frontend
-    aux = muestra_candidatos.loc[muestra_candidatos["tid"].astype("Int64") == tid_id]
-    if not aux.empty:
-        exoplaneta = aux.iloc[0]
-    else:
-        if generado == False:
-            st.error(f"No se encontró ningún exoplaneta con TIC ID {tid_id}.")
-            return
-        
-    # print(f"Descargando TIC {int(exoplaneta['tid'])} - TOI {exoplaneta['toi']}")
-    curva_luz = descarga_tess_lk(exoplaneta['tid'])
-    # print(curva_luz)
-    t = curva_luz.time.value if hasattr(curva_luz.time, "value") else curva_luz.time
-    f = curva_luz.flux.value if hasattr(curva_luz.flux, "value") else curva_luz.flux 
-    grafico_curva_luz(t, f, exoplaneta,out_dir)
-    grafico_curva_luz_plegado(t, f, exoplaneta,out_dir)
+tabla_ph = st.empty()  # placeholder para la tabla
+with st.status("Cargando tabla inicial…", expanded=True) as status:
+    try:
+        status.write("Consultando TOI (PC/KP) en el Exoplanet Archive…")
+        df_inicial = cargar_datos(cantidad_filas)
+        status.update(label="¡Tabla lista! ✅", state="complete")
+        tabla_ph.dataframe(df_inicial, use_container_width=True)
+        st.toast(f"{len(df_inicial):,} filas cargadas", icon="✅")
+    except requests.exceptions.Timeout:
+        status.update(label="Timeout consultando la API", state="error")
+        st.error("La API tardó demasiado en responder. Probá nuevamente.")
+    except requests.exceptions.HTTPError as e:
+        status.update(label="Error HTTP al consultar", state="error")
+        st.error(f"HTTP {e.response.status_code}: {e.response.text[:300]}")
+    except Exception as e:
+        status.update(label="Error inesperado al cargar", state="error")
+        st.exception(e)
 
-# ---------- MAIN ----------
+# ---------- Generador de gráficos ----------
 st.title("Generador de gráficos de curvas de luz TESS")
-st.write("""
-Este prototipo genera gráficos de curvas de luz TESS para exoplanetas candidatos utilizando la librería Lightkurve y datos oficiales de TOI de la NASA.
-""")
-tid_input = st.text_input("Ingrese el TIC ID (tid) del exoplaneta candidato (por ejemplo, 16288184):", value="16288184")
+st.write("Este prototipo genera gráficos con Lightkurve para exoplanetas candidatos (TOI PC/KP).")
 
-left_column, right_column = st.columns(2)
+tid_input = st.text_input(
+    "Ingrese el TIC ID (tid) del exoplaneta candidato (por ejemplo, 16288184):",
+    value="16288184"
+)
 
-if st.button("Generar gráficos"):
-    LINK = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
-    # Trae los primeros 10 registros de la tabla TOI
-    q = f"SELECT * FROM toi WHERE tfopwg_disp LIKE 'PC' OR tfopwg_disp LIKE 'KP' AND tid = {tid_input} ORDER BY tid"
-    r = requests.get(LINK, params={"query": q, "format": "csv"})
-    data_set = pd.read_csv(
-            io.StringIO(r.text)
-        )
-    if tid_input:
-        generamiento_parametros_exoplaneta(tid_input)
-        if os.path.exists(os.path.join(out_dir, f"TIC{tid_input}_suavizado.png")) and os.path.exists(os.path.join(out_dir, f"TIC{tid_input}_plegado.png")):
+if st.button("Generar gráficos", type="primary"):
+    with st.status("Generando gráficos…", expanded=True) as status:
+        try:
+            # 1) Validar TID
+            if not tid_input.isdigit():
+                status.update(label="TID inválido", state="error")
+                st.error("Por favor, ingrese un TID numérico válido.")
+                st.stop()
+            tid_val = int(tid_input)
+
+            status.write("Buscando el TOI (PC/KP) para ese TID…")
+            data_set = consultar_toi_por_tid(tid_val)
+            muestra = data_set[data_set["tfopwg_disp"].isin(["PC", "KP"])]
+
+            if muestra.empty:
+                status.update(label="Sin resultados para ese TID", state="error")
+                st.error(f"No se encontró ningún exoplaneta PC/KP con TIC ID {tid_val}.")
+                st.stop()
+
+            exoplaneta = muestra.iloc[0]
+
+            # 2) Descargar curva de luz
+            status.write(f"Descargando curva de luz TESS para TIC {tid_val}…")
+            curva = descarga_tess_lk(exoplaneta["tid"])
+            if curva is None:
+                status.update(label="No se pudo descargar la curva", state="error")
+                st.error("No se encontró curva de luz para ese TIC en TESS.")
+                st.stop()
+
+            # 3) Preparar arrays
+            status.write("Procesando y suavizando curva…")
+            t = curva.time.value if hasattr(curva.time, "value") else curva.time
+            f = curva.flux.value if hasattr(curva.flux, "value") else curva.flux
+
+            # 4) Generar gráficos
+            status.write("Creando gráficos (suavizado y plegado)…")
+            path_suav = grafico_curva_luz(t, f, exoplaneta, OUT_DIR)
+            path_pleg = grafico_curva_luz_plegado(t, f, exoplaneta, OUT_DIR)
+
+            # 5) Mostrar resultados
+            status.update(label="¡Listo! ✅", state="complete")
             st.success("Gráficos generados exitosamente:")
-            generado = True
+            left_column, right_column = st.columns(2)
+
+
             with left_column:
                 st.subheader("Curva de Luz Suavizada")
-                st.image(os.path.join(out_dir, f"TIC{tid_input}_suavizado.png"), width=400)
+                st.image(path_suav, use_column_width=True)
+
             with right_column:
                 st.subheader("Curva de Luz Plegada")
-                st.image(os.path.join(out_dir, f"TIC{tid_input}_plegado.png"), width=400)
-            # o mostrar ambos juntos
-            # st.image([os.path.join(out_dir, f"TIC{tid_input}_suavizado.png"), os.path.join(out_dir, f"TIC{tid_input}_plegado.png")], width=400)
-            # st.success("Gráficos generados y guardados en el directorio 'graficos_producidos'.")
-    else:
-        st.error("Por favor, ingrese un TIC ID válido.")    
+                st.image(path_pleg, use_column_width=True)
 
-# Add Link to your repo
-'''
-    [![Repo](https://img.icons8.com/?size=50&id=4MhUS4CzoLbx&format=png&color=000000)](https://github.com/leonelcnr/SPACE-APP/) 
+            st.toast(f"Imágenes guardadas en ./{OUT_DIR}", icon="🖼️")
 
-'''
-st.markdown("<br>",unsafe_allow_html=True)
+        except requests.exceptions.Timeout:
+            status.update(label="Timeout de la API", state="error")
+            st.error("La API tardó demasiado en responder. Probá de nuevo.")
+        except requests.exceptions.HTTPError as e:
+            status.update(label="Error HTTP en la API", state="error")
+            st.error(f"HTTP {e.response.status_code}: {e.response.text[:300]}")
+        except Exception as e:
+            status.update(label="Error generando gráficos", state="error")
+            st.exception(e)
+
+# ---------- Link a repo ----------
+st.markdown(
+    """
+    <br>
+    <a href="https://github.com/leonelcnr/SPACE-APP/" target="_blank">
+        <img src="https://img.icons8.com/?size=50&id=4MhUS4CzoLbx&format=png&color=000000" alt="Repo"/>
+    </a>
+    """,
+    unsafe_allow_html=True
+)
