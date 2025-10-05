@@ -11,6 +11,7 @@ import pandas as pd
 import lightkurve as lk
 import matplotlib.pyplot as plt
 from scipy.signal import medfilt
+import requests, io
 # ---------- CONFIGURACION ----------
 path_csv_exoplanetas_tess = "csv_temp/TOI_2025.10.04_12.24.10.csv" #ver con el dominio de streamlit donde crear las carpetas
 out_dir = "graficos_producidos" #donde se alojararn los graficos
@@ -83,7 +84,12 @@ def grafico_curva_luz_plegado(t, f, exoplaneta, direccion_salida):#t (días), f_
     print("hecho")
 
 def generamiento_parametros_exoplaneta(tid_id, directorio_csv):
-    data_set = pd.read_csv(directorio_csv, sep=None, engine="python", comment="#")
+    LINK = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
+    q = f"SELECT * FROM {"toi"}"
+    r = requests.get(LINK, params={"query": q, "format": "csv"})
+    data_set = pd.read_csv(
+            io.StringIO(r.text)
+        )
     muestra_candidatos = data_set[data_set['tfopwg_disp'].isin(["PC", "KP"])] #filtro solo planetas candidatos sera hecho en el frontend
     aux = muestra_candidatos.loc[muestra_candidatos["tid"].astype("Int64") == tid_id]
     exoplaneta = aux.iloc[0]
@@ -96,17 +102,3 @@ def generamiento_parametros_exoplaneta(tid_id, directorio_csv):
     grafico_curva_luz_plegado(t, f, exoplaneta,out_dir)
 
 generamiento_parametros_exoplaneta(231663901,path_csv_exoplanetas_tess)
-
-    LINK = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
-    q = f"SELECT * FROM {"toi"}"
-    r = requests.get(LINK, params={"query": q, "format": "csv"})
-
-    # @st.cache_data
-    def cargar_datos(nfilas):
-        data = pd.read_csv(
-            io.StringIO(r.text), 
-            nrows=nfilas
-        )
-        return data
-
-    data = cargar_datos(10)
