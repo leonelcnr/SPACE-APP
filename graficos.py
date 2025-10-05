@@ -112,7 +112,7 @@ st.title("Generador de gráficos de curvas de luz TESS")
 st.write("""
 Este prototipo genera gráficos de curvas de luz TESS para exoplanetas candidatos utilizando la librería Lightkurve y datos oficiales de TOI de la NASA.
 """)
-tid_input = st.selectbox("Ingrese el TIC ID del exoplaneta candidato:", options=data_set['tid'].astype("Int64").unique())
+tid_input = st.selectbox("Ingrese el TIC ID del exoplaneta candidato (Primeros 10):", options=data_set['tid'].astype("Int64").unique())
 
 left_column, right_column = st.columns(2)
 
@@ -120,6 +120,7 @@ if st.button("Generar gráficos"):
     if tid_input:
         generamiento_parametros_exoplaneta(tid_input)
         if os.path.exists(os.path.join(out_dir, f"TIC{tid_input}_suavizado.png")) and os.path.exists(os.path.join(out_dir, f"TIC{tid_input}_plegado.png")):
+            st.success("Gráficos generados exitosamente:")
             with left_column:
                 st.subheader("Curva de Luz Suavizada")
                 st.image(os.path.join(out_dir, f"TIC{tid_input}_suavizado.png"), width=400)
@@ -128,7 +129,6 @@ if st.button("Generar gráficos"):
                 st.image(os.path.join(out_dir, f"TIC{tid_input}_plegado.png"), width=400)
             # o mostrar ambos juntos
             # st.image([os.path.join(out_dir, f"TIC{tid_input}_suavizado.png"), os.path.join(out_dir, f"TIC{tid_input}_plegado.png")], width=400)
-            st.success("Gráficos generados y guardados en el directorio 'graficos_producidos'.")
+            # st.success("Gráficos generados y guardados en el directorio 'graficos_producidos'.")
     else:
         st.error("Por favor, ingrese un TIC ID válido.")    
-
