@@ -1,0 +1,44 @@
+name: Deploy Streamlit to Azure Web App
+
+on:
+  push:
+    branches: [ "main" ]        # cambiá la rama si usás otra
+  workflow_dispatch:             # te permite dispararlo a mano
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: streamlit-azure-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'   # o '3.11', que coincida con tu Web App
+
+      - name: Validar que existe requirements.txt
+        run: test -f requirements.txt || (echo "requirements.txt no encontrado" && exit 1)
+
+      # (Opcional) instalar deps y correr tests si querés validar antes de desplegar
+      # - name: Install deps (opcional)
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install -r requirements.txt
+      #     # pytest -q
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: mi-streamlit-app        # <--- REEMPLAZÁ por el nombre exacto de tu Web App
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+          package: .                        # despliega el contenido del repositorio
