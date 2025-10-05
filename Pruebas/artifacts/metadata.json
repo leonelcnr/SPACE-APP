@@ -1,0 +1,67 @@
+{
+  "timestamp": "2025-10-05 09:51:56",
+  "n_candidates": 1979,
+  "top5": [
+    {
+      "toi": "K02972.01",
+      "prob_planet": 0.9975333926534649
+    },
+    {
+      "toi": "K04526.01",
+      "prob_planet": 0.9973820211016939
+    },
+    {
+      "toi": "K02972.02",
+      "prob_planet": 0.996062233113069
+    },
+    {
+      "toi": "K04526.02",
+      "prob_planet": 0.9959952308465533
+    },
+    {
+      "toi": "K00211.01",
+      "prob_planet": 0.9959449495895963
+    }
+  ],
+  "cv_metrics": {
+    "roc_auc_mean": 0.9685574183806013,
+    "roc_auc_std": 0.0028493767955613844,
+    "ap_mean": 0.9413001369212909,
+    "ap_std": 0.007240048753543258,
+    "best_f1_mean": 0.8833893036607325,
+    "best_f1_std": 0.006126310112844423
+  },
+  "full_metrics": {
+    "roc_auc_full": 0.9999051768474372,
+    "ap_full": 0.9998362251665023,
+    "best_f1_full": 0.9961797339005825,
+    "best_threshold_full": 0.5619495418192084,
+    "precision_at_best_f1": 0.995274445656125,
+    "recall_at_best_f1": 0.9970866715222141,
+    "n_train_rows": 7585,
+    "class_counts": {
+      "planet(1)": 2746,
+      "fp(0)": 4839
+    }
+  },
+  "feature_importances": {
+    "period/days": 2871,
+    "duration/hours": 3147,
+    "depth": 2148,
+    "planet_radius": 2099,
+    "stellar_radius": 1896,
+    "stteff": 2319,
+    "logg": 1879,
+    "tess_mag": 2441
+  },
+  "feature_medians": {
+    "period/days": 8.07394097,
+    "duration/hours": 3.836,
+    "depth": 465.5,
+    "planet_radius": 2.52,
+    "stellar_radius": 1.0,
+    "stteff": 5767.0,
+    "logg": 4.438,
+    "tess_mag": 14.5
+  }
+}
