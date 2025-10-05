@@ -119,17 +119,19 @@ with tab_manual:
             submit_btn = st.form_submit_button("Calcular probabilidad")
 
         if submit_btn:
+            with open(META_PATH, "r") as f:
+                data = json.load(f)
+                st.write("ROC AUC (full):", data["full_metrics"]["roc_auc_full"])
             prob = predict_single(model, input_data, medians=medians)
             decision = "PLANET-LIKE" if prob >= threshold else "NOT PLANET-LIKE"
             if prob > 0.66:
-                st.markdown("**Su cuerpo es un exoplaneta!**")
+                st.markdown("**Su cuerpo es un exoplaneta! ✅**")
             else:
                 if prob > 0.33:
-                    st.markdown("**El cuerpo ingresado es un planeta candidato.**")
+                    st.markdown("**El cuerpo ingresado es un planeta candidato. ⚠️**")
                 else:
-                    st.markdown("**Falso Positivo!**")
-            st.markdown(f"**Probabilidad:**{prob:.6f}")
-            st.markdown(f"**Decisión (umbral {threshold:.2f}):** {decision}")
+                    st.markdown("**Falso Positivo! ❌**")
+            st.markdown(f"**Probabilidad:{prob:.6f}**")
 
             # Opción guardar
             save_choice = st.checkbox("Guardar este objeto en registro local", value=True)
