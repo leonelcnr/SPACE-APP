@@ -11,7 +11,7 @@ dict_tables = {
     "Planetary Systems": "ps"
 }
 
-x = st.slider('Hyperparameter Tweaking', max_value=10)
+st.title("Datasets de Exoplanetas")
 
 left_column, right_column = st.columns(2)
 option = st.selectbox("Dataset", dict_tables.keys())
