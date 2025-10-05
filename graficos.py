@@ -85,7 +85,7 @@ def grafico_curva_luz_plegado(t, f, exoplaneta, direccion_salida):#t (días), f_
 
 def generamiento_parametros_exoplaneta(tid_id, directorio_csv):
     LINK = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
-    q = f"SELECT * FROM {"toi"}"
+    q = "SELECT * FROM toi"
     r = requests.get(LINK, params={"query": q, "format": "csv"})
     data_set = pd.read_csv(
             io.StringIO(r.text)
