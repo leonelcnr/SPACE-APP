@@ -1,67 +1,67 @@
 {
-  "timestamp": "2025-10-05 09:51:56",
-  "n_candidates": 1979,
+  "timestamp": "2025-10-05 20:20:04",
+  "n_candidates": 6560,
   "top5": [
     {
-      "toi": "K02972.01",
-      "prob_planet": 0.9975333926534649
+      "toi": 732.02,
+      "prob_planet": 0.9950018549060176
     },
     {
-      "toi": "K04526.01",
-      "prob_planet": 0.9973820211016939
+      "toi": 1827.01,
+      "prob_planet": 0.992332681733923
     },
     {
-      "toi": "K02972.02",
-      "prob_planet": 0.996062233113069
+      "toi": 174.01,
+      "prob_planet": 0.9889283023248979
     },
     {
-      "toi": "K04526.02",
-      "prob_planet": 0.9959952308465533
+      "toi": 1233.02,
+      "prob_planet": 0.9878218759574464
     },
     {
-      "toi": "K00211.01",
-      "prob_planet": 0.9959449495895963
+      "toi": 4481.01,
+      "prob_planet": 0.9854598837140849
     }
   ],
   "cv_metrics": {
-    "roc_auc_mean": 0.9685574183806013,
-    "roc_auc_std": 0.0028493767955613844,
-    "ap_mean": 0.9413001369212909,
-    "ap_std": 0.007240048753543258,
-    "best_f1_mean": 0.8833893036607325,
-    "best_f1_std": 0.006126310112844423
+    "roc_auc_mean": 0.8866651926883502,
+    "roc_auc_std": 0.013470643272942309,
+    "ap_mean": 0.5153167049128585,
+    "ap_std": 0.01788168100989158,
+    "best_f1_mean": 0.5144461436024532,
+    "best_f1_std": 0.03137733828024816
   },
   "full_metrics": {
-    "roc_auc_full": 0.9999051768474372,
-    "ap_full": 0.9998362251665023,
-    "best_f1_full": 0.9961797339005825,
-    "best_threshold_full": 0.5619495418192084,
-    "precision_at_best_f1": 0.995274445656125,
-    "recall_at_best_f1": 0.9970866715222141,
-    "n_train_rows": 7585,
+    "roc_auc_full": 0.9999995023865541,
+    "ap_full": 0.9999957376434283,
+    "best_f1_full": 0.9992684706046089,
+    "best_threshold_full": 0.4510046575093927,
+    "precision_at_best_f1": 1.0,
+    "recall_at_best_f1": 0.9985380116959064,
+    "n_train_rows": 6560,
     "class_counts": {
-      "planet(1)": 2746,
-      "fp(0)": 4839
+      "planet(1)": 684,
+      "fp(0)": 5876
     }
   },
   "feature_importances": {
-    "period/days": 2871,
-    "duration/hours": 3147,
-    "depth": 2148,
-    "planet_radius": 2099,
-    "stellar_radius": 1896,
-    "stteff": 2319,
-    "logg": 1879,
-    "tess_mag": 2441
+    "period/days": 2638,
+    "duration/hours": 2508,
+    "depth": 2261,
+    "planet_radius": 2279,
+    "stellar_radius": 1855,
+    "stteff": 2376,
+    "logg": 2232,
+    "tess_mag": 2651
   },
   "feature_medians": {
-    "period/days": 8.07394097,
-    "duration/hours": 3.836,
-    "depth": 465.5,
-    "planet_radius": 2.52,
-    "stellar_radius": 1.0,
-    "stteff": 5767.0,
-    "logg": 4.438,
-    "tess_mag": 14.5
+    "period/days": 4.1849602,
+    "duration/hours": 2.761,
+    "depth": 4432.5,
+    "planet_radius": 10.13644385,
+    "stellar_radius": 1.24,
+    "stteff": 5801.1,
+    "logg": 4.33,
+    "tess_mag": 11.94115
   }
 }

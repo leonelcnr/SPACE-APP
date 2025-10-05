@@ -60,8 +60,8 @@ if train_btn:
         f.write(uploaded.getbuffer())
 
     st.info("Preparando datos...")
-    train_df, candidates_df = load_and_prepare(str(temp_csv))
-    st.write(f"Filas entrenamiento: {len(train_df)} | Candidatos PC: {len(candidates_df)}")
+    train_df = load_and_prepare(str(temp_csv))
+    st.write(f"Filas entrenamiento: {len(train_df)} | Candidatos PC: {len(train_df)}")
 
     st.info("Cross-validation...")
     cv = cross_validate(train_df, default_params, n_splits=5, calibrate=calibrate)
@@ -76,7 +76,7 @@ if train_btn:
     st.json(full_metrics)
 
     st.info("Rankeando candidatos (PC)...")
-    scored = score_candidates(model, candidates_df)
+    scored = score_candidates(model, train_df)
     if not scored.empty:
         st.dataframe(scored.head(20))
     else:
@@ -121,6 +121,13 @@ with tab_manual:
         if submit_btn:
             prob = predict_single(model, input_data, medians=medians)
             decision = "PLANET-LIKE" if prob >= threshold else "NOT PLANET-LIKE"
+            if prob > 0.66:
+                st.markdown("**Su cuerpo es un exoplaneta!**")
+            else:
+                if prob > 0.33:
+                    st.markdown("**El cuerpo ingresado es un planeta candidato.**")
+                else:
+                    st.markdown("**Falso Positivo!**")
             st.markdown(f"**Probabilidad:**{prob:.6f}")
             st.markdown(f"**Decisión (umbral {threshold:.2f}):** {decision}")
 
