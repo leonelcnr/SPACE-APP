@@ -19,6 +19,7 @@ dict_tables = {
 
 # (opcional) solo para jugar
 x = st.slider('Hyperparameter Tweaking', max_value=10)
+st.title("Datasets de Exoplanetas")
 
 left_column, right_column = st.columns(2)
 option = st.selectbox("Dataset", list(dict_tables.keys()))
@@ -31,48 +32,25 @@ def fetch_df_from_tap(table: str, limit: int | None = None, timeout: int = 60):
     y devuelve (DataFrame, CSV_string).
     """
     LINK = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
-    top = f"top {limit} " if limit else ""
-    q = f"select {top} * from {table}"
-    r = requests.get(LINK, params={"query": q, "format": "csv"}, timeout=timeout)
-    r.raise_for_status()
-    csv_text = r.text
-    df = pd.read_csv(io.StringIO(csv_text))
-    return df, csv_text
+    q = f"SELECT top 10 * FROM {dict_tables[option]}"
+    r = requests.get(LINK, params={"query": q, "format": "csv"})
 
-# Placeholders para tabla y descarga
-tabla_ph = st.empty()
-dl_ph = st.empty()
+    # @st.cache_data
+    def cargar_datos(nfilas):
+        data = pd.read_csv(
+            io.StringIO(r.text), 
+            nrows=nfilas
+        )
+        return data
 
-if option != "Seleccione una opcion":
-    table = dict_tables[option]
+    data = cargar_datos(10)
 
-    with st.status("Ejecutando consulta…", expanded=True) as status:
-        try:
-            status.write(f"Solicitando datos de **{table}** a la API…")
-            # si la tabla es muy grande, usa limit=2000 por ejemplo
-            df, csv_text = fetch_df_from_tap(table)  # limit=2000
+    st.write(data)
 
-            status.write("Procesando CSV con pandas…")
-            # aquí podrías filtrar/transformar df si hace falta
+# Add Link to your repo
+'''
+    [![Repo](https://img.icons8.com/?size=50&id=4MhUS4CzoLbx&format=png&color=000000)](https://github.com/leonelcnr/SPACE-APP/) 
 
-            status.update(label="¡Listo! ✅", state="complete")
-            tabla_ph.dataframe(df, use_container_width=True)
-            dl_ph.download_button(
-                "Descargar resultados (CSV)",
-                data=csv_text.encode("utf-8"),
-                file_name=f"{table}.csv",
-                mime="text/csv",
-            )
-            st.toast(f"{len(df):,} filas cargadas", icon="✅")
+'''
+st.markdown("<br>",unsafe_allow_html=True)
 
-        except requests.exceptions.HTTPError as e:
-            status.update(label="Error HTTP en la API", state="error")
-            st.error(f"HTTP {e.response.status_code}: {e.response.text[:300]}")
-        except requests.exceptions.Timeout:
-            status.update(label="Timeout", state="error")
-            st.error("La API tardó demasiado en responder. Probá de nuevo.")
-        except Exception as e:
-            status.update(label="Error inesperado", state="error")
-            st.exception(e)
-else:
-    st.info("Elegí una opción del menú para ver la tabla. Mostraremos un indicador de carga durante la consulta.")
