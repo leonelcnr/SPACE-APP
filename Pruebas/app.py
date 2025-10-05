@@ -121,7 +121,7 @@ with tab_manual:
         if submit_btn:
             prob = predict_single(model, input_data, medians=medians)
             decision = "PLANET-LIKE" if prob >= threshold else "NOT PLANET-LIKE"
-            st.markdown(f"**Probabilidad:** {prob:.6f}")
+            st.markdown(f"**Probabilidad:**{prob:.6f}")
             st.markdown(f"**Decisión (umbral {threshold:.2f}):** {decision}")
 
             # Opción guardar

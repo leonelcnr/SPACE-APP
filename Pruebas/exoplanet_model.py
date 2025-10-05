@@ -57,10 +57,10 @@ FEATURE_COLS = [
     'stellar_radius', 'stteff', 'logg', 'tess_mag'
 ]
 
-KOI_DISP_MAP = {
-    "CONFIRMED": "CP",
-    "CANDIDATE": "PC",
-    "FALSE POSITIVE": "FP"
+KOI_DISP_MAP = { #FP:0;PC:1;CP:2 
+    2.0: "CP",
+    1.0: "PC",
+    0.0: "FP"
 }
 
 def _collapse_duplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -104,9 +104,9 @@ def _collapse_duplicate_columns(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 def load_and_prepare(csv_path: str,
-                     schema_path: str = "schema_mapping.json",
-                     allow_koi_depth_fraction: bool = True,
-                     convert_bkjd_to_bjd: bool = True):
+                    schema_path: str = "schema_mapping.json",
+                    allow_koi_depth_fraction: bool = True,
+                    convert_bkjd_to_bjd: bool = True):
     """
     Carga dataset TESS o KOI y lo estandariza:
     - Mapping columnas (sinónimos/fuzzy)
@@ -144,7 +144,7 @@ def load_and_prepare(csv_path: str,
     df['disposition'] = df['disposition'].replace(KOI_DISP_MAP)
 
     # Filtrar solo disposiciones que reconocemos
-    valid_disp = {'CP','KP','FP','PC'}
+    valid_disp = {'CP','FP','PC'}
     df = df[df['disposition'].isin(valid_disp)].copy()
 
     # 5. Ajustar depth si parece fracción
@@ -165,12 +165,9 @@ def load_and_prepare(csv_path: str,
     keep_cols = list(dict.fromkeys(['tic_id','toi','disposition','epoch_bjd'] + FEATURE_COLS))
     df = df[[c for c in keep_cols if c in df.columns]].copy()
 
-    # 8. Separar train y candidatos
-    train_df = df[df['disposition'].isin(['CP','KP','FP'])].copy()
-    candidates_df = df[df['disposition'] == 'PC'].copy()
-    train_df['label'] = (train_df['disposition'].isin(['CP','KP'])).astype(int)
-
-    return train_df, candidates_df
+    # 8. Unificar train y candidatos: trabajar con todos los datos juntos
+    df['label'] = (df['disposition'].isin(['CP','KP'])).astype(int)
+    return df
 
 def cross_validate(train_df, params, n_splits=5, calibrate=False):
     X = train_df[FEATURE_COLS]
