@@ -35,3 +35,10 @@ if option != "Seleccione una opcion":
 
     st.write(data)
 
+# Add Link to your repo
+'''
+    [![Repo](https://img.icons8.com/?size=50&id=4MhUS4CzoLbx&format=png&color=000000)](https://github.com/leonelcnr/SPACE-APP/) 
+
+'''
+st.markdown("<br>",unsafe_allow_html=True)
+
