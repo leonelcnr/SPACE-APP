@@ -119,6 +119,9 @@ with tab_manual:
             submit_btn = st.form_submit_button("Calculate probability")
 
         if submit_btn:
+            with open(META_PATH, "r") as f:
+                data = json.load(f)
+                st.write("ROC AUC (full):", data["full_metrics"]["roc_auc_full"])
             prob = predict_single(model, input_data, medians=medians)
             decision = "PLANET-LIKE" if prob >= threshold else "NOT PLANET-LIKE"
             if prob > 0.66:
@@ -129,7 +132,7 @@ with tab_manual:
                 else:
                     st.markdown("**False positive!**")
             st.markdown(f"**Probability:**{prob:.6f}")
-            st.markdown(f"**Decision (umbral {threshold:.2f}):** {decision}")
+##            st.markdown(f"**Decision (umbral {threshold:.2f}):** {decision}")
 
             # Opción guardar
             save_choice = st.checkbox("Save this object to local registry", value=True)
