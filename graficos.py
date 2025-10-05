@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import medfilt
 import requests, io
 # ---------- CONFIGURACION ----------
-path_csv_exoplanetas_tess = "csv_temp/TOI_2025.10.04_12.24.10.csv" #ver con el dominio de streamlit donde crear las carpetas
+#path_csv_exoplanetas_tess = "csv_temp/TOI_2025.10.04_12.24.10.csv" #ver con el dominio de streamlit donde crear las carpetas
 out_dir = "graficos_producidos" #donde se alojararn los graficos
 os.makedirs(out_dir, exist_ok=True)
 # ---------- funcionamiento ----------
@@ -101,4 +101,4 @@ def generamiento_parametros_exoplaneta(tid_id, directorio_csv):
     grafico_curva_luz(t, f, exoplaneta,out_dir)
     grafico_curva_luz_plegado(t, f, exoplaneta,out_dir)
 
-generamiento_parametros_exoplaneta(231663901,path_csv_exoplanetas_tess)
+generamiento_parametros_exoplaneta(231663901)
