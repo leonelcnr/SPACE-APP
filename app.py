@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests, io
 
-st.set_page_config(page_title="PLUTONITA", layout="wide")
+st.set_page_config(page_title="PLUTONITA", layout="wide", page_icon="logo/logo.jpeg")
 
 st.markdown(
     "<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1>"

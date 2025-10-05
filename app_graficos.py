@@ -4,6 +4,10 @@ mini prototipo de uso de librerias
 - astropy (BLS)
 - numpy/pandas/matplotlib (manejo y plots)
 """
+st.set_page_config(
+    page_title="Plutonita",
+    page_icon="logo/logo.jpeg",  
+)
 # ---------- Importes ----------
 import os
 import io

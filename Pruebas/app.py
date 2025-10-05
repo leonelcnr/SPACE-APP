@@ -29,14 +29,14 @@ default_params = {
 }
 
 with st.sidebar:
-    st.header("Entrenamiento")
-    uploaded = st.file_uploader("Subir CSV TOI", type=["csv"])
-    calibrate = st.checkbox("Calibrar probabilidades (isotonic)", value=False)
-    train_btn = st.button("Entrenar / Re-entrenar")
+    st.header("Training")
+    uploaded = st.file_uploader("Upload CSV TOI", type=["csv"])
+    calibrate = st.checkbox("Calibrate probabilities (isotonic)", value=False)
+    train_btn = st.button("Train / Re-train")
 
     st.markdown("---")
-    st.header("Predicción Manual")
-    threshold = st.slider("Umbral clasificación (planet-like)", 0.0, 1.0, 0.5, 0.01)
+    st.header("Manual Prediction")
+    threshold = st.slider("Classification threshold (planet-like)", 0.0, 1.0, 0.5, 0.01)
 
 # Cargar modelo y medianas si existen
 model = None
@@ -44,71 +44,71 @@ medians = {}
 if MODEL_PATH.exists():
     try:
         model = load_model(MODEL_PATH)
-        st.success("Modelo cargado.")
+        st.success("Loaded model.")
         medians = load_medians(META_PATH)
     except Exception as e:
-        st.error(f"No se pudo cargar el modelo: {e}")
+        st.error(f"The model could not be loaded: {e}")
 
 # Entrenamiento
 if train_btn:
     if uploaded is None:
-        st.error("Primero sube un CSV.")
+        st.error("First upload a CSV.")
         st.stop()
     ARTIFACTS_DIR.mkdir(exist_ok=True, parents=True)
     temp_csv = ARTIFACTS_DIR / "uploaded_training.csv"
     with open(temp_csv, "wb") as f:
         f.write(uploaded.getbuffer())
 
-    st.info("Preparando datos...")
-    train_df, candidates_df = load_and_prepare(str(temp_csv))
-    st.write(f"Filas entrenamiento: {len(train_df)} | Candidatos PC: {len(candidates_df)}")
+    st.info("Preparing data...")
+    train_df = load_and_prepare(str(temp_csv))
+    st.write(f"Training rows: {len(train_df)} | PC candidates: {len(train_df)}")
 
     st.info("Cross-validation...")
     cv = cross_validate(train_df, default_params, n_splits=5, calibrate=calibrate)
-    st.subheader("Métricas CV promedio")
+    st.subheader("Average CV Metrics")
     st.json(cv)
 
-    st.info("Entrenando modelo final...")
+    st.info("Training final model...")
     model = train_full_model(train_df, default_params, calibrate=calibrate)
 
-    st.info("Métricas sobre todo el dataset de entrenamiento...")
+    st.info("Metrics on the entire training dataset...")
     full_metrics = compute_full_metrics(train_df, model)
     st.json(full_metrics)
 
-    st.info("Rankeando candidatos (PC)...")
-    scored = score_candidates(model, candidates_df)
+    st.info("Ranking candidates (PC)...")
+    scored = score_candidates(model, train_df)
     if not scored.empty:
         st.dataframe(scored.head(20))
     else:
-        st.warning("No había filas PC para rankear.")
+        st.warning("There were no PC rows to rank.")
 
-    st.info("Guardando artefactos...")
+    st.info("Storing artifacts...")
     save_artifacts(model, scored, cv, full_metrics, train_df, outdir=str(ARTIFACTS_DIR))
 
-    st.success("Entrenamiento completo. Recarga para usar medianas actualizadas.")
+    st.success("Complete training. Reload to use updated medians.")
     st.stop()
 
 # Tabs
-tab_ranking, tab_manual, tab_metadata = st.tabs(["Ranking PC", "Ingreso Manual", "Metadatos"])
+tab_ranking, tab_manual, tab_metadata = st.tabs(["PC Ranking", "Manual entry", "Metadata"])
 
 with tab_ranking:
-    st.subheader("Ranking de candidatos (PC)")
+    st.subheader("Candidate ranking (PC)")
     if CANDS_PATH.exists():
         df_cands = pd.read_csv(CANDS_PATH)
         st.dataframe(df_cands.head(50), use_container_width=True)
         st.download_button(
-            label="Descargar ranking completo (CSV)",
+            label="Download full ranking (CSV)",
             data=df_cands.to_csv(index=False),
             file_name="candidates_scored.csv",
             mime="text/csv"
         )
     else:
-        st.info("Aún no hay ranking. Entrena primero.")
+        st.info("There's no ranking yet. Train first.")
 
 with tab_manual:
-    st.subheader("Ingresar nuevo objeto / planeta")
+    st.subheader("Enter new object / planet")
     if model is None:
-        st.warning("Primero entrena o carga un modelo.")
+        st.warning("First train or load a model.")
     else:
         with st.form("manual_form"):
             cols = st.columns(4)
@@ -116,16 +116,26 @@ with tab_manual:
             for i, feat in enumerate(FEATURE_COLS):
                 with cols[i % 4]:
                     input_data[feat] = st.number_input(feat, value=0.0, format="%.5f", key=f"in_{feat}")
-            submit_btn = st.form_submit_button("Calcular probabilidad")
+            submit_btn = st.form_submit_button("Calculate probability")
 
         if submit_btn:
+            with open(META_PATH, "r") as f:
+                data = json.load(f)
+                st.write("ROC AUC (full):", data["full_metrics"]["roc_auc_full"])
             prob = predict_single(model, input_data, medians=medians)
             decision = "PLANET-LIKE" if prob >= threshold else "NOT PLANET-LIKE"
-            st.markdown(f"**Probabilidad:**{prob:.6f}")
-            st.markdown(f"**Decisión (umbral {threshold:.2f}):** {decision}")
+            if prob > 0.66:
+                st.markdown("**Your object is an exoplanet!**")
+            else:
+                if prob > 0.33:
+                    st.markdown("**The entered object is a candidate planet.**")
+                else:
+                    st.markdown("**False positive!**")
+            st.markdown(f"**Probability:**{prob:.6f}")
+##            st.markdown(f"**Decision (umbral {threshold:.2f}):** {decision}")
 
             # Opción guardar
-            save_choice = st.checkbox("Guardar este objeto en registro local", value=True)
+            save_choice = st.checkbox("Save this object to local registry", value=True)
             if save_choice:
                 row = input_data.copy()
                 row.update({
@@ -140,24 +150,24 @@ with tab_manual:
                 else:
                     df_new = pd.DataFrame([row])
                 df_new.to_csv(USER_INPUTS, index=False)
-                st.success("Guardado en artifacts/user_inputs.csv")
+                st.success("Saved in artifacts/user_inputs.csv")
 
             if USER_INPUTS.exists():
-                with st.expander("Ver últimos guardados"):
+                with st.expander("View last saved"):
                     st.dataframe(pd.read_csv(USER_INPUTS).tail(10))
 
 with tab_metadata:
-    st.subheader("Metadatos / Métricas")
+    st.subheader("Metadata / Metrics")
     if META_PATH.exists():
         meta = json.loads(META_PATH.read_text())
         st.json(meta)
         imps = meta.get("feature_importances")
         if imps:
-            st.markdown("### Importancia de Features")
+            st.markdown("### Importance of features")
             imp_df = (pd.DataFrame(list(imps.items()), columns=["feature","importance"])
                         .sort_values("importance", ascending=False))
             st.bar_chart(imp_df.set_index("feature"))
     else:
-        st.info("Sin metadata todavía.")
+        st.info("No metadata yet.")
 
-st.caption("Prototipo – Modelo binario (CP/KP vs FP) con ranking de PC y formulario de ingreso manual.")
+st.caption("Prototype – Binary model (CP/KP vs FP) with PC ranking and manual entry form.")
