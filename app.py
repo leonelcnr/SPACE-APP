@@ -24,7 +24,7 @@ st.set_page_config(
 st.set_page_config(page_title="PLUTONITA", layout="wide")
 st.markdown(
     "<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1>"
-    "<p style='text-align: center'>En busca de <strong>Exoplanetas</strong> 🪐</p>",
+    "<p style='text-align: center'>In search of <strong>Exoplanets</strong> 🪐</p>",
     unsafe_allow_html=True
 )
 st.title("Datasets de Objetos TESS de Interés (TOI)")
@@ -225,7 +225,7 @@ if st.button("Generar gráficos", type="primary"):
             status.update(label="Timeout de la API", state="error")
             st.error("La API tardó demasiado en responder. Probá de nuevo.")
         except requests.exceptions.HTTPError as e:
-            status.update(label="Error HTTP en la API", state="error")
+            status.update(label="HTTP Error in the API", state="error")
             st.error(f"HTTP {e.response.status_code}: {e.response.text[:300]}")
         except Exception as e:
             status.update(label="Error generando gráficos", state="error")
