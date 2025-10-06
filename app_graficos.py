@@ -4,10 +4,6 @@ mini prototipo de uso de librerias
 - astropy (BLS)
 - numpy/pandas/matplotlib (manejo y plots)
 """
-st.set_page_config(
-    page_title="Plutonita",
-    page_icon="logo/logo.jpeg",  
-)
 # ---------- Importes ----------
 import os
 import io
@@ -21,6 +17,10 @@ import matplotlib.pyplot as plt
 from scipy.signal import medfilt
 
 # ---------- UI base ----------
+st.set_page_config(
+    page_title="Plutonita",
+    page_icon="logo/logo.jpeg",  
+)
 st.set_page_config(page_title="PLUTONITA", layout="wide")
 st.markdown(
     "<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1>"
@@ -139,11 +139,11 @@ cantidad_filas = st.number_input(
     "Cantidad de filas a cargar:", min_value=1, max_value=1000, value=10, step=1
 )
 
-tabla_ph = st.empty()  # placeholder para la tabla
 with st.status("Cargando tabla inicial…", expanded=True) as status:
     try:
         status.write("Consultando TOI (PC/KP) en el Exoplanet Archive…")
         df_inicial = cargar_datos(cantidad_filas)
+        tabla_ph = st.empty()  # placeholder para la tabla
         status.update(label="¡Tabla lista! ✅", state="complete")
         tabla_ph.dataframe(df_inicial, use_container_width=True)
         st.toast(f"{len(df_inicial):,} filas cargadas", icon="✅")
