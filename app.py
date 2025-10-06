@@ -213,11 +213,11 @@ if st.button("Generar gráficos", type="primary"):
 
             with left_column:
                 st.subheader("Curva de Luz Suavizada")
-                st.image(path_suav, use_column_width=True)
+                st.image(path_suav)
 
             with right_column:
                 st.subheader("Curva de Luz Plegada")
-                st.image(path_pleg, use_column_width=True)
+                st.image(path_pleg)
 
             st.toast(f"Imágenes guardadas en ./{OUT_DIR}", icon="🖼️")
 
