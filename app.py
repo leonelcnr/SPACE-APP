@@ -6,12 +6,12 @@ st.set_page_config(page_title="PLUTONITA", layout="wide", page_icon="logo/logo.j
 
 st.markdown(
     "<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1>"
-    "<p style='text-align: center'>En busca de <strong>Exoplanetas</strong> 🪐</p>",
+    "<p style='text-align: center'>In search of <strong>Exoplanets</strong> 🪐</p>",
     unsafe_allow_html=True
 )
 
 dict_tables = {
-    "Seleccione una opcion": "",
+    "Select an option": "",
     "Kepler": "cumulative",     # si en TAP no existe, cambia a 'koi'
     "TESS": "toi",
     "Planetary Systems": "ps"
@@ -43,39 +43,39 @@ def fetch_df_from_tap(table: str, limit: int | None = None, timeout: int = 60):
 tabla_ph = st.empty()
 dl_ph = st.empty()
 
-if option != "Seleccione una opcion":
+if option != "Select an option":
     table = dict_tables[option]
 
-    with st.status("Ejecutando consulta…", expanded=True) as status:
+    with st.status("Running query…", expanded=True) as status:
         try:
-            status.write(f"Solicitando datos de **{table}** a la API…")
+            status.write(f"Requesting data from **{table}** to the API…")
             # si la tabla es muy grande, usa limit=2000 por ejemplo
             df, csv_text = fetch_df_from_tap(table)  # limit=2000
 
-            status.write("Procesando CSV con pandas…")
+            status.write("Processing CSV with pandas…")
             # aquí podrías filtrar/transformar df si hace falta
 
-            status.update(label="¡Listo! ✅", state="complete")
+            status.update(label="Ready! ✅", state="complete")
             tabla_ph.dataframe(df, use_container_width=True)
             dl_ph.download_button(
-                "Descargar resultados (CSV)",
+                "Download results (CSV)",
                 data=csv_text.encode("utf-8"),
                 file_name=f"{table}.csv",
                 mime="text/csv",
             )
-            st.toast(f"{len(df):,} filas cargadas", icon="✅")
+            st.toast(f"{len(df):,} loaded rows", icon="✅")
 
         except requests.exceptions.HTTPError as e:
-            status.update(label="Error HTTP en la API", state="error")
+            status.update(label="HTTP Error in the API", state="error")
             st.error(f"HTTP {e.response.status_code}: {e.response.text[:300]}")
         except requests.exceptions.Timeout:
             status.update(label="Timeout", state="error")
-            st.error("La API tardó demasiado en responder. Probá de nuevo.")
+            st.error("The API took too long to respond. Please try again.")
         except Exception as e:
-            status.update(label="Error inesperado", state="error")
+            status.update(label="Unexpected error", state="error")
             st.exception(e)
 else:
-    st.info("Elegí una opción del menú para ver la tabla. Mostraremos un indicador de carga durante la consulta.")
+    st.info("Choose an option from the menu to view the table. We'll display a loading indicator during the query.")
 
 
 # Add Link to your repo
