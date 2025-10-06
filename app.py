@@ -59,46 +59,10 @@ if MODEL_PATH.exists():
         st.error(f"The model could not be loaded: {e}")
 
 # Entrenamiento
-if train_btn:
-    if uploaded is None:
-        st.error("First upload a CSV.")
-        st.stop()
-    ARTIFACTS_DIR.mkdir(exist_ok=True, parents=True)
-    temp_csv = ARTIFACTS_DIR / "uploaded_training.csv"
-    with open(temp_csv, "wb") as f:
-        f.write(uploaded.getbuffer())
 
-    st.info("Preparing data...")
-    train_df = load_and_prepare(str(temp_csv))
-    st.write(f"Training rows: {len(train_df)} | PC candidates: {len(train_df)}")
-
-    st.info("Cross-validation...")
-    cv = cross_validate(train_df, default_params, n_splits=5, calibrate=calibrate)
-    st.subheader("Average CV Metrics")
-    st.json(cv)
-
-    st.info("Training final model...")
-    model = train_full_model(train_df, default_params, calibrate=calibrate)
-
-    st.info("Metrics on the entire training dataset...")
-    full_metrics = compute_full_metrics(train_df, model)
-    st.json(full_metrics)
-
-    st.info("Ranking candidates (PC)...")
-    scored = score_candidates(model, train_df)
-    if not scored.empty:
-        st.dataframe(scored.head(20))
-    else:
-        st.warning("There were no PC rows to rank.")
-
-    st.info("Storing artifacts...")
-    save_artifacts(model, scored, cv, full_metrics, train_df, outdir=str(ARTIFACTS_DIR))
-
-    st.success("Complete training. Reload to use updated medians.")
-    st.stop()
 
 # Tabs
-tab_home, tab_ranking, tab_manual, tab_metadata, tab_transition_method= st.tabs(["Home", "PC Ranking", "Manual entry", "Metadata", "Transition Method"])
+tab_home, tab_ranking, tab_manual, tab_metadata, tab_transition_method, tab_trained_model = st.tabs(["Home", "PC Ranking", "Manual entry", "Metadata", "Transition Method", "Trained Model"])
 with tab_home:
     st.markdown("""
         <style>
@@ -451,3 +415,42 @@ with tab_transition_method:
         
 
     st.caption("Prototype – Binary model (CP/KP vs FP) with PC ranking and manual entry form.")
+
+with tab_trained_model:
+    if train_btn:
+        if uploaded is None:
+            st.error("First upload a CSV.")
+            st.stop()
+        ARTIFACTS_DIR.mkdir(exist_ok=True, parents=True)
+        temp_csv = ARTIFACTS_DIR / "uploaded_training.csv"
+        with open(temp_csv, "wb") as f:
+            f.write(uploaded.getbuffer())
+
+        st.info("Preparing data...")
+        train_df = load_and_prepare(str(temp_csv))
+        st.write(f"Training rows: {len(train_df)} | PC candidates: {len(train_df)}")
+
+        st.info("Cross-validation...")
+        cv = cross_validate(train_df, default_params, n_splits=5, calibrate=calibrate)
+        st.subheader("Average CV Metrics")
+        st.json(cv)
+
+        st.info("Training final model...")
+        model = train_full_model(train_df, default_params, calibrate=calibrate)
+
+        st.info("Metrics on the entire training dataset...")
+        full_metrics = compute_full_metrics(train_df, model)
+        st.json(full_metrics)
+
+        st.info("Ranking candidates (PC)...")
+        scored = score_candidates(model, train_df)
+        if not scored.empty:
+            st.dataframe(scored.head(20))
+        else:
+            st.warning("There were no PC rows to rank.")
+
+        st.info("Storing artifacts...")
+        save_artifacts(model, scored, cv, full_metrics, train_df, outdir=str(ARTIFACTS_DIR))
+
+        st.success("Complete training. Reload to use updated medians.")
+        st.stop()
