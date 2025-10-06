@@ -37,15 +37,6 @@ default_params = {
     "objective": "binary"
 }
 
-with st.sidebar:
-    st.header("Training")
-    uploaded = st.file_uploader("Upload CSV TOI", type=["csv"])
-    calibrate = st.checkbox("Calibrate probabilities (isotonic)", value=False)
-    train_btn = st.button("Train / Re-train")
-
-    st.markdown("---")
-    st.header("Manual Prediction")
-    threshold = st.slider("Classification threshold (planet-like)", 0.0, 1.0, 0.5, 0.01)
 
 # Cargar modelo y medianas si existen
 model = None
@@ -417,6 +408,17 @@ with tab_transition_method:
     st.caption("Prototype – Binary model (CP/KP vs FP) with PC ranking and manual entry form.")
 
 with tab_trained_model:
+    with st.sidebar:
+        st.header("Training")
+        uploaded = st.file_uploader("Upload CSV TOI", type=["csv"])
+        calibrate = st.checkbox("Calibrate probabilities (isotonic)", value=False)
+        train_btn = st.button("Train / Re-train")
+        st.markdown("**See results on Trained Model Tab**")
+
+        st.markdown("---")
+        st.header("Manual Prediction")
+        threshold = st.slider("Classification threshold (planet-like)", 0.0, 1.0, 0.5, 0.01)
+    
     if train_btn:
         if uploaded is None:
             st.error("First upload a CSV.")
