@@ -7,6 +7,7 @@ mini prototipo de uso de librerias
 # ---------- Importes ----------
 import os
 import io
+import time
 import requests
 import numpy as np
 import pandas as pd
@@ -16,14 +17,10 @@ import matplotlib.pyplot as plt
 from scipy.signal import medfilt
 
 # ---------- UI base ----------
-st.set_page_config(
-    page_title="Plutonita",
-    page_icon="logo/logo.jpeg",  
-)
-st.set_page_config(page_title="PLUTONITA", layout="wide")
+st.set_page_config(page_title="PLUTONITA", layout="wide", page_icon="logo/logo.jpeg")
 st.markdown(
     "<h1 style='text-align: center'>🚀 PLUTONITA 🚀</h1>"
-    "<p style='text-align: center'>In search of <strong>Exoplanets</strong> 🪐</p>",
+    "<p style='text-align: center'>En busca de <strong>Exoplanetas</strong> 🪐</p>",
     unsafe_allow_html=True
 )
 st.title("Datasets de Objetos TESS de Interés (TOI)")
@@ -138,11 +135,11 @@ cantidad_filas = st.number_input(
     "Cantidad de filas a cargar:", min_value=1, max_value=1000, value=10, step=1
 )
 
+tabla_ph = st.empty()  # placeholder para la tabla
 with st.status("Cargando tabla inicial…", expanded=True) as status:
     try:
         status.write("Consultando TOI (PC/KP) en el Exoplanet Archive…")
         df_inicial = cargar_datos(cantidad_filas)
-        tabla_ph = st.empty()  # placeholder para la tabla
         status.update(label="¡Tabla lista! ✅", state="complete")
         tabla_ph.dataframe(df_inicial, use_container_width=True)
         st.toast(f"{len(df_inicial):,} filas cargadas", icon="✅")
@@ -212,11 +209,11 @@ if st.button("Generar gráficos", type="primary"):
 
             with left_column:
                 st.subheader("Curva de Luz Suavizada")
-                st.image(path_suav)
+                st.image(path_suav, use_column_width=True)
 
             with right_column:
                 st.subheader("Curva de Luz Plegada")
-                st.image(path_pleg)
+                st.image(path_pleg, use_column_width=True)
 
             st.toast(f"Imágenes guardadas en ./{OUT_DIR}", icon="🖼️")
 
@@ -224,7 +221,7 @@ if st.button("Generar gráficos", type="primary"):
             status.update(label="Timeout de la API", state="error")
             st.error("La API tardó demasiado en responder. Probá de nuevo.")
         except requests.exceptions.HTTPError as e:
-            status.update(label="HTTP Error in the API", state="error")
+            status.update(label="Error HTTP en la API", state="error")
             st.error(f"HTTP {e.response.status_code}: {e.response.text[:300]}")
         except Exception as e:
             status.update(label="Error generando gráficos", state="error")
