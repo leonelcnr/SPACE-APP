@@ -7,7 +7,6 @@ mini prototipo de uso de librerias
 # ---------- Importes ----------
 import os
 import io
-import time
 import requests
 import numpy as np
 import pandas as pd
